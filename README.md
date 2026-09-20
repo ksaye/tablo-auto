@@ -5,6 +5,17 @@ The app streams only audio (≈96 kbps) so it uses little data and no picture 
 
 > Unofficial. Not affiliated with, endorsed by, or supported by Tablo, Scripps or Google.
 
+## In the car
+
+| Choosing a channel | Playing |
+|---|---|
+| ![The channel list in Android Auto](docs/images/browse.png) | ![The now-playing screen](docs/images/now-playing.png) |
+
+Rows lead with the programme and put the channel underneath, because a screen full of call signs
+asks a driver to remember what is on each one. The two tabs are the antenna channels and the free
+streaming ones; previous and next walk the channels of whichever you are in.
+
+
 ---
 
 ## Features
