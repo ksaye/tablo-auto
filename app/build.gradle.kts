@@ -36,8 +36,8 @@ android {
         // service plumbing assume, and no car head unit predates it.
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 2
+        versionName = "1.0.1"
 
         buildConfigField("String", "UPDATE_API_BASE",
             "\"${updateSetting("UPDATE_API_BASE", "https://api.github.com")}\"")

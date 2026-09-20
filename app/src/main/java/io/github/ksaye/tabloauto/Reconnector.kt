@@ -64,12 +64,17 @@ class Reconnector(
 
     private val networkCallback = object : ConnectivityManager.NetworkCallback() {
         override fun onAvailable(network: Network) {
-            val broken = player.playerError != null ||
-                player.playbackState == Player.STATE_IDLE ||
-                retryJob?.isActive == true
-            if (broken && player.playWhenReady) {
-                Log.i(TAG, "Network is back; reconnecting now")
-                scope.launch { retryNow() }
+            // This arrives on the system's own ConnectivityThread, and a player may only be
+            // touched from the thread it was built on. So decide nothing here: hop to the main
+            // thread first and ask the player there.
+            scope.launch {
+                val broken = player.playerError != null ||
+                    player.playbackState == Player.STATE_IDLE ||
+                    retryJob?.isActive == true
+                if (broken && player.playWhenReady) {
+                    Log.i(TAG, "Network is back; reconnecting now")
+                    retryNow()
+                }
             }
         }
     }

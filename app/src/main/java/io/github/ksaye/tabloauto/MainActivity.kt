@@ -14,7 +14,6 @@ import androidx.lifecycle.lifecycleScope
 import androidx.media3.common.MediaItem
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
-import com.google.common.util.concurrent.MoreExecutors
 import io.github.ksaye.tabloauto.databinding.ActivityMainBinding
 import kotlinx.coroutines.launch
 import java.io.File
@@ -122,6 +121,9 @@ class MainActivity : AppCompatActivity() {
     private fun connectController() {
         val token = SessionToken(this, ComponentName(this, TabloMediaService::class.java))
         val future = MediaController.Builder(this, token).buildAsync()
+        // The main executor, not a direct one: a controller may only be touched from the thread
+        // it was built on, and a direct executor would run this on whichever thread happened to
+        // finish the connection.
         future.addListener({
             controller = try {
                 future.get()
@@ -136,7 +138,7 @@ class MainActivity : AppCompatActivity() {
                     ).joinToString(" — ")
                 }
             })
-        }, MoreExecutors.directExecutor())
+        }, ContextCompat.getMainExecutor(this))
     }
 
     /**

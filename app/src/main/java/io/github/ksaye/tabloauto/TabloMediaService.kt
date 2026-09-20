@@ -149,16 +149,17 @@ class TabloMediaService : MediaLibraryService() {
             .build()
 
     /**
-     * One channel.
+     * One channel, labelled by what is on it.
      *
-     * The title is the channel, not the programme: a driver glancing at a list is looking for
-     * "4.1 KDFW", and the programme underneath is what tells them whether they want it.
+     * The programme is the title and the channel is the line underneath, because that is what a
+     * driver is choosing between — a screen full of call signs asks them to remember what is on
+     * each one. Where the guide knows nothing, the channel becomes the title instead.
      */
     private fun channelItem(channel: Channel, playable: Boolean): MediaItem {
         val metadata = MediaMetadata.Builder()
-            .setTitle(channel.label)
-            .setSubtitle(channel.description)
-            .setArtist(channel.description)
+            .setTitle(channel.displayTitle)
+            .setSubtitle(channel.displaySubtitle)
+            .setArtist(channel.displaySubtitle)
             .setStation(channel.label)
             .setIsBrowsable(false)
             .setIsPlayable(true)

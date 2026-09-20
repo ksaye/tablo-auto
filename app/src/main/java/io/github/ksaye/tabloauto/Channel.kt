@@ -25,7 +25,22 @@ data class Channel(
     /** "4.1 KDFW", the way a channel is spoken about. */
     val label: String get() = if (number.isBlank()) callSign else "$number $callSign"
 
-    /** What to show underneath: the programme if the guide knows one, else the station name. */
+    /**
+     * The big line on a row and on the now-playing screen: what is actually on.
+     *
+     * The programme, not the channel — "4.1 KDFW" tells a driver nothing they can choose by, and
+     * the channel is still right underneath. Falls back to the channel when the guide has nothing,
+     * so a row is never blank.
+     */
+    val displayTitle: String
+        get() = nowTitle ?: label
+
+    /** The small line: the channel it is on, and the episode if there is one. */
+    val displaySubtitle: String
+        get() = if (nowTitle != null) listOfNotNull(label, nowSubtitle).joinToString(" · ")
+        else name
+
+    /** Kept for anywhere that wants the programme alone. */
     val description: String
         get() = listOfNotNull(nowTitle, nowSubtitle).joinToString(" · ").ifBlank { name }
 
