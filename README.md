@@ -1,127 +1,157 @@
 # Tablo Auto
 
-Listen to live TV from a **Tablo** over-the-air DVR while you drive, through **Android Auto**.
-
-It is a media app and nothing more: the car browses the channel line-up, you tap one, and the
-sound comes out of the car speakers. There is no picture — a car is no place for one, and sending
-one would cost about a gigabyte an hour of mobile data for something nobody can watch.
+Listen to live TV from a **Tablo** over‑the‑air DVR while you drive, through **Android Auto**.  
+The app streams only audio (≈96 kbps) so it uses little data and no picture is shown in the car.
 
 > Unofficial. Not affiliated with, endorsed by, or supported by Tablo, Scripps or Google.
 
-## What it does
+---
 
-- **Every channel, with what is on now** — antenna channels and the free streaming (FAST) channels
-  on your account, each listed with the programme currently airing.
-- **Next and previous change channel.** Tapping a channel loads the whole of its group around it,
-  so the buttons on the steering wheel are channel up and channel down.
-- **Audio only, at about 96 kbps** — roughly 46 MB an hour, against about 1.1 GB for the video
-  stream. The server drops the picture before it encodes anything, so it costs it less too.
-- **Reconnects by itself.** Drive through a dead spot and it comes back on its own; see below.
-- **Voice search** — "play four one" or a station's name finds the channel.
-- **Picks up where it left off.** Start the car, press play, and the last channel returns.
-- **Keeps itself up to date** from this repository's releases.
+## Features
 
-## What it needs
+| Feature | Description |
+|---------|-------------|
+| **Full channel list** | Antenna channels + free‑streaming (FAST) channels from your account, each shown with the program that is currently airing. |
+| **Channel navigation** | Tap a channel to load its group; use steering‑wheel “channel up/down” buttons for next/previous. |
+| **Audio‑only streaming** | 96 kbps (~46 MB/hr). The server drops the picture before encoding, saving bandwidth and CPU. |
+| **Automatic reconnect** | Exponential back‑off on player errors, watchdog for stalled buffering, immediate retry when network returns. |
+| **Voice search** | “Play four one” or a station’s name finds the channel (implemented in `TabloMediaService`). |
+| **Resume last channel** | When playback starts with no selection, the app restores the previously chosen channel. |
+| **Self‑update** | Checks its own GitHub releases and downloads/install updates automatically. |
 
-A **[tablo-web](https://github.com/ksaye/tablo-web)** server (version 1.3.0 or newer) that can be
-reached from the road — this app talks to that, not to the DVR directly. The DVR itself is on your
-home network and the transcoding has to happen somewhere; tablo-web is what does both.
+---
 
-The audio stream comes from `/api/audio/channel/{id}.m3u8`, which is the endpoint that makes
-reconnecting work, so an older tablo-web will not do.
+## Architecture
 
-## Install
+```
+┌───────────────────────┐
+│ Android Auto (UI)     │
+├─────────────┬─────────┤
+│             │         │
+│ TabloClient ├─► Reconnector  (reconnect logic)
+│             │         │
+│ TabloMediaService (media session, ExoPlayer)
+│             │
+│ Updater      (self‑update via GitHub API)
+└─────────────┴─────────┘
+```
 
-The app is sideloaded.
+* **`TabloClient`** – HTTP client that talks to a `tabloweb` server.  
+  It attaches the sign‑in cookie only for requests to the configured host.
+* **`Reconnector`** – Handles player errors, buffering stalls and network changes; re‑initialises the ExoPlayer instance with the same stable channel URL (`/api/audio/channel/{id}.m3u8`).
+* **`TabloMediaService`** – Implements `MediaLibraryService` for Android Auto browsing and playback.  
+  Uses Media3 (`ExoPlayer`, `MediaSession`) to stream audio.
+* **`Updater`** – Reads the GitHub releases API (configurable via env vars) and installs new APKs through a `FileProvider`.
+
+All configuration is stored in `Settings` (shared preferences). The app can also read a cookie directly from the user or from an environment variable (`COOKIE`) for advanced use.
+
+---
+
+## Prerequisites
+
+* **Tablo Web server** – version 1.3.0+ reachable over the Internet.  
+  The app talks to this server, not directly to the DVR.
+* **Android device** (Android 16+).  
+  Android Auto requires at least API 23; the app targets API 26–36.
+
+---
+
+## Installation
+
+The app is sideloaded – it is not available on Google Play.
 
 ```bash
 adb install io.github.ksaye.tabloauto-1.0.0.apk
 ```
 
-On Android 16 and newer, installing from a file manager or browser may be blocked by *Apps from
-unverified developers* — which imposes a 24-hour delay before the setting can even be turned on.
-Installing over `adb` is not subject to it.
+> On Android 16+ installing from a file manager or browser may be blocked by *Apps from unverified developers*.  
+> Installing via `adb` bypasses this restriction.
 
-Then, on the phone:
+### Making the app visible in Android Auto
 
-1. Open **Tablo Auto** and enter the address of your tablo-web site.
-2. Press **Save and test**. If the site is behind a Microsoft Entra sign-in, a **Sign in** button
-   appears — it signs in once, in a web view, and the app keeps the session from then on. The car
-   never shows a sign-in screen.
-3. Press **Play the first channel** to hear it working before you go anywhere.
+Android Auto hides sideloaded media apps until you enable developer mode:
 
-### Making it appear in Android Auto
+1. Open **Android Auto** on your phone.  
+2. Tap the version number ten times → **Developer settings**.  
+3. In the menu, turn on **Unknown sources**.
 
-Android Auto hides sideloaded media apps until you tell it not to:
+---
 
-1. Open the **Android Auto** settings on the phone.
-2. Tap the version number ten times to unlock **Developer settings**.
-3. In the ⋮ menu, turn on **Unknown sources**.
+## Configuration
 
-## Reconnecting
+Open the app and follow these steps:
 
-This is the part the app exists for. A car drives out of coverage mid-sentence and back into it a
-mile later, and none of that should need touching.
+1. **Enter Tablo Web address** (e.g., `https://tv.example.org`).  
+   The URL must include the scheme (`http` or `https`).
+2. Tap **Save and test**.  
+   *If the site requires Microsoft Entra sign‑in*, a **Sign in** button appears – tap it to authenticate once; the session cookie is stored automatically.
+3. (Optional) Paste a session cookie manually by tapping **Advanced → Paste a session cookie instead**.  
+   The cookie will be used for all requests to the same host.
 
-Every channel has one address on the server that never changes. It does not name a transcode
-session — it joins whichever session is running for that channel, or starts one, and redirects.
-So recovering from anything is the same move: prepare the player again, at the same URL.
+The app remembers the address and cookie between launches.
 
-Three things go wrong and all three end there:
+---
 
-| What happens | What the app does |
-|---|---|
-| The player gives up after failed loads | Prepares again, backing off 1s, 2s, 4s … to 30s |
-| The player hangs in a buffering state instead | A watchdog sees the position stop advancing and forces the same recovery |
-| Signal returns during a backoff | A network callback retries at once rather than waiting out the delay |
+## Usage
 
-Playback resumes a little way behind the live edge on purpose: those few seconds are already
-downloaded, so a short dropout is covered by the buffer instead of a silence.
+* **Browse channels** – tap any channel in the list; the car’s media browser shows the group.
+* **Play first channel** – use the “Play the first channel” button on the main screen to test playback before driving.
+* **Stop** – press the stop button or use the car’s media controls.
+* **Voice search** – say a station number, call sign or program title; the app will select the matching channel.
 
-## Building
+The app automatically reconnects if you drive through a dead spot and returns when connectivity is restored.
 
-Needs a JDK 17 and the Android SDK (platform 36).
+---
+
+## Building from source
+
+You need JDK 17 and Android SDK (platform 36).  
+`build-apk.sh` writes the version into `app/build.gradle.kts`, builds, signs (if a keystore is available) and copies the APK to `app/build/outputs/apk/release`.
 
 ```bash
-./build-apk.sh 1.0.0 1        # version, versionCode
+# Build release with version 1.0.0 and Android versionCode 1
+./build-apk.sh 1.0.0 1
 ```
 
-Signing comes from a `keystore.env` in the project root:
+### Signing
+
+Create a keystore once:
+
+```bash
+keytool -genkeypair -v \
+    -keystore tabloauto.keystore -alias tabloauto \
+    -keyalg RSA -keysize 4096 -validity 10950
+```
+
+Place the following in `keystore.env` (not committed):
 
 ```
 KEYSTORE_PATH=/path/to/tabloauto.keystore
-KEYSTORE_PASSWORD=…
+KEYSTORE_PASSWORD=...
 KEY_ALIAS=tabloauto
-KEY_PASSWORD=…
+KEY_PASSWORD=...
 ```
 
-Android only installs an update over an app signed with the **same** key, so keep that keystore and
-reuse it for every release.
+If `keystore.env` is missing, the build produces a debug‑signed APK that cannot be upgraded.
 
-Self-updates default to this repository's GitHub releases. A private build can point somewhere
-else — a Gitea server on your own network, say — with an `update.env` alongside it:
+### Self‑update configuration
 
-```
-UPDATE_API_BASE=https://example.org/gitea/api/v1
-UPDATE_OWNER=…
-UPDATE_REPO=…
-UPDATE_TOKEN=…
-```
+The app can check its own GitHub releases.  
+Set optional environment variables in `update.env` (not committed) or export them:
 
-Neither file is committed.
+| Variable | Purpose | Default |
+|----------|---------|---------|
+| `UPDATE_API_BASE` | API base URL | `https://api.github.com` |
+| `UPDATE_OWNER` | Repo owner | `ksaye` |
+| `UPDATE_REPO` | Repo name | `tablo-auto` |
+| `UPDATE_TOKEN` | Personal access token (for private repos) | empty |
 
-## How it is put together
+These values are injected into the APK as `BuildConfig` fields.
 
-| File | What it does |
-|---|---|
-| `TabloMediaService.kt` | Everything the car sees: the browse tree, the queue, the player |
-| `Reconnector.kt` | Surviving dead spots — backoff, stall watchdog, live-edge handling |
-| `TabloClient.kt` | Talking to tablo-web, and attaching the sign-in cookie in one place |
-| `ChannelRepository.kt` | The channel list, cached to disk so the car never waits on a request |
-| `SignInActivity.kt` | The one-time Entra sign-in |
-| `MainActivity.kt` | The phone screen: address, sign-in, a way to try it, updates |
-| `Updater.kt` | Checking the release feed and installing a newer build |
+---
 
-## Licence
+## License
 
-MIT — see [LICENSE](LICENSE).
+MIT – see [LICENSE](LICENSE).
+
+---
