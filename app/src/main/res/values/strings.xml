@@ -1,0 +1,38 @@
+<resources>
+    <string name="app_name">Tablo Auto</string>
+    <string name="sign_in">Sign in</string>
+    <string name="server_label">Tablo web address</string>
+    <string name="server_hint">https://tv.example.org</string>
+    <string name="save_and_test">Save and test</string>
+    <string name="play_test">Play the first channel</string>
+    <string name="stop">Stop</string>
+    <string name="advanced">Paste a session cookie instead</string>
+    <string name="cookie_hint">tablo.auth=…</string>
+    <string name="use_cookie">Use this cookie</string>
+    <string name="channel_group_antenna">Antenna channels</string>
+    <string name="channel_group_fast">Free streaming channels</string>
+    <string name="live_tv">Live TV</string>
+    <string name="reconnecting">Reconnecting…</string>
+    <string name="tagline">Listen to live TV from your Tablo while you drive.</string>
+    <string name="try_it_here">Try it here</string>
+    <string name="install_update">Download and install</string>
+    <string name="car_hint">Android Auto only lists apps it was installed alongside. For a sideloaded app, turn on Developer settings in Android Auto (tap the version ten times), then switch on “Unknown sources”.</string>
+    <string name="set_address_first">Enter the Tablo address first.</string>
+    <string name="signed_in">Signed in.</string>
+    <string name="checking">Checking…</string>
+    <string name="version_line">Version %1$s</string>
+    <string name="enter_an_address">Enter the address of your Tablo web site.</string>
+    <string name="connected">Connected. %1$d channels.</string>
+    <string name="connected_as">Connected as %2$s. %1$d channels.</string>
+    <string name="needs_sign_in">This site asks you to sign in.</string>
+    <string name="could_not_connect">Could not connect: %1$s</string>
+    <string name="no_channels">No channels came back from the server.</string>
+    <string name="player_not_ready">The player is still starting up; try again.</string>
+    <string name="updates_off">Updates are not configured for this build.</string>
+    <string name="checking_for_updates">Checking for updates…</string>
+    <string name="up_to_date">Up to date (version %1$s).</string>
+    <string name="update_available">Version %1$s is available.</string>
+    <string name="downloading">Downloading…</string>
+    <string name="download_failed">The download failed.</string>
+    <string name="allow_installs">Allow this app to install apps, then press the button again.</string>
+</resources>

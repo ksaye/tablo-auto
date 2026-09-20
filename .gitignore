@@ -1,0 +1,11 @@
+.gradle/
+build/
+local.properties
+.idea/
+*.iml
+.kotlin/
+
+# Secrets: signing, and the self-updater's release feed (which carries a token).
+*.keystore
+keystore.env
+update.env
